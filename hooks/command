@@ -1,0 +1,38 @@
+#!/bin/bash
+set -euo pipefail
+
+version_default="latest"
+version="${BUILDKITE_PLUGIN_BUILDTOOLS_VERSION:-$version_default}"
+
+current_version=''
+test_file=build
+if [[ -f "$test_file" ]] ; then
+    current_version=$(./$test_file --version|cut -f1 -d , | cut -f2 -d \ )
+fi
+if [[ "${current_version}" != "${version}" ]]; then
+    echo "Downloading buildtools version ${version}"
+    if [[ "${version_default}" == "${version}" ]] ; then
+        curl -Ls "https://api.github.com/repos/buildtool/build-tools/releases/latest" | grep  -wo "https.*Linux_x86_64.tar.gz" | wget -O buildtools.tgz -qi-
+    else
+        wget -O buildtools.tgz "https://github.com/buildtool/build-tools/releases/download/v${version}/build-tools_${version}_Linux_x86_64.tar.gz"
+    fi
+    tar -xzf buildtools.tgz
+else
+    echo "Using buildtools version ${version}"
+fi
+
+if [[ -n "${BUILDKITE_PLUGIN_BUILDTOOLS_CONFIG}" ]]; then
+    envfile="./envsource"
+    rm -f ${envfile}
+    echo "Sourcing env config ${BUILDKITE_PLUGIN_BUILDTOOLS_CONFIG}"
+    aws s3 cp "${BUILDKITE_PLUGIN_BUILDTOOLS_CONFIG}" ${envfile}
+    # shellcheck source=/dev/null
+    source ${envfile}
+fi
+if [[ -n "${BUILDKITE_COMMAND}" ]]; then
+    # shellcheck disable=SC2086
+    ./${BUILDKITE_COMMAND}
+else
+  echo "No command specified"
+  exit 1
+fi

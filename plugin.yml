@@ -1,0 +1,17 @@
+name: Buildtools
+description: Runs your build with buildtools
+author: https://buildtools.io
+requirements:
+  - docker
+
+configuration:
+  properties:
+    command:
+      type: string
+    version:
+      type: string
+    config:
+      type: string
+  required:
+    - command
+  additionalProperties: false
