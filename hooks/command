@@ -18,7 +18,7 @@ if [[ "${current_version}" != "${version}" ]]; then
     else
         wget -O "${buildtools_path}/buildtools.tgz" "https://github.com/buildtool/build-tools/releases/download/v${version}/build-tools_${version}_Linux_x86_64.tar.gz"
     fi
-    tar -xzf -C "${buildtools_path}" "${buildtools_path}/buildtools.tgz"
+    tar -C "${buildtools_path}" -xzf "${buildtools_path}/buildtools.tgz"
 else
     echo "Using buildtools version ${version}"
 fi
