@@ -2,25 +2,33 @@
 set -euo pipefail
 
 version_default="latest"
-version="${BUILDKITE_PLUGIN_BUILDTOOLS_VERSION:-$version_default}"
+wanted_version="${BUILDKITE_PLUGIN_BUILDTOOLS_VERSION:-$version_default}"
 
 current_version=''
 test_file=build
-buildtools_path="/tmp/buildtools-${version}"
+buildtools_path="/tmp/buildtools-${wanted_version}"
 mkdir -p "${buildtools_path}"
-if [[ -f "${buildtools_path}/$test_file" ]] ; then
+
+if [[ -z "${BUILDKITE_COMMAND:-}" ]]; then
+  echo "No command specified"
+  exit 1
+fi
+
+if [[ -f "${buildtools_path}/$test_file" ]]; then
     current_version=$("${buildtools_path}/$test_file" --version|cut -f1 -d , | cut -f2 -d \ )
 fi
-if [[ "${current_version}" != "${version}" ]]; then
-    echo "Downloading buildtools version ${version}"
-    if [[ "${version_default}" == "${version}" ]] ; then
-        curl -Ls "https://api.github.com/repos/buildtool/build-tools/releases/latest" | grep  -wo "https.*Linux_x86_64.tar.gz" | wget -O "${buildtools_path}/buildtools.tgz" -qi-
-    else
-        wget -O "${buildtools_path}/buildtools.tgz" "https://github.com/buildtool/build-tools/releases/download/v${version}/build-tools_${version}_Linux_x86_64.tar.gz"
-    fi
+
+latest_version=$(curl -Ls "https://api.github.com/repos/buildtool/build-tools/releases/latest" | jq -r '.name')
+latest_version="${latest_version:1}"
+
+if [[ "${wanted_version}" == "${version_default}" ]]; then
+    wanted_version="${latest_version}"
+fi
+
+if [[ "${current_version}" != "${wanted_version}" ]]; then
+    echo "Downloading buildtools version ${wanted_version}"
+    wget -O "${buildtools_path}/buildtools.tgz" "https://github.com/buildtool/build-tools/releases/download/v${wanted_version}/build-tools_${wanted_version}_Linux_x86_64.tar.gz"
     tar -C "${buildtools_path}" -xzf "${buildtools_path}/buildtools.tgz"
-else
-    echo "Using buildtools version ${version}"
 fi
 
 if [[ -n "${BUILDKITE_PLUGIN_BUILDTOOLS_CONFIG:-}" ]]; then
@@ -31,10 +39,6 @@ if [[ -n "${BUILDKITE_PLUGIN_BUILDTOOLS_CONFIG:-}" ]]; then
     source "${envfile}"
     rm -f "${envfile}"
 fi
-if [[ -n "${BUILDKITE_COMMAND}" ]]; then
-    # shellcheck disable=SC2086
-    ${buildtools_path}/${BUILDKITE_COMMAND}
-else
-  echo "No command specified"
-  exit 1
-fi
+
+# shellcheck disable=SC2086
+${buildtools_path}/${BUILDKITE_COMMAND}
