@@ -14,6 +14,18 @@ if [[ -z "${BUILDKITE_COMMAND:-}" ]]; then
   exit 1
 fi
 
+lock=true
+if ! type flock >/dev/null 2>&1; then
+    echo "flock not installed, proceeding without lock capabilties, might result in build errors if buildtools are being downladeded"
+    lock=false
+fi
+if [[ "${lock}" = true ]]; then
+    exec 200>/tmp/.buildtools.lock
+    echo "Waiting for lock"
+    flock 200 
+fi 
+
+
 if [[ -f "${buildtools_path}/$test_file" ]]; then
     current_version=$("${buildtools_path}/$test_file" --version|cut -f1 -d , | cut -f2 -d \ )
 fi
@@ -38,6 +50,10 @@ if [[ -n "${BUILDKITE_PLUGIN_BUILDTOOLS_CONFIG:-}" ]]; then
     # shellcheck source=/dev/null
     source "${envfile}"
     rm -f "${envfile}"
+fi
+
+if [[ "${lock}" = true ]]; then
+    flock -u 200
 fi
 
 # shellcheck disable=SC2086
