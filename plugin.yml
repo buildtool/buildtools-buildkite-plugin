@@ -6,12 +6,8 @@ requirements:
 
 configuration:
   properties:
-    command:
-      type: string
     version:
       type: string
     config:
       type: string
-  required:
-    - command
   additionalProperties: false
