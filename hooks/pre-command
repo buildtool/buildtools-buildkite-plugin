@@ -16,14 +16,14 @@ fi
 
 lock=true
 if ! type flock >/dev/null 2>&1; then
-    echo "flock not installed, proceeding without lock capabilties, might result in build errors if buildtools are being downladeded"
+    echo "flock not installed, proceeding without lock capabilities, might result in build errors if buildtools are being downloaded"
     lock=false
 fi
 if [[ "${lock}" = true ]]; then
     exec 200>/tmp/.buildtools.lock
     echo "Waiting for lock"
-    flock 200 
-fi 
+    flock 200
+fi
 
 
 if [[ -f "${buildtools_path}/$test_file" ]]; then
@@ -57,4 +57,4 @@ if [[ "${lock}" = true ]]; then
 fi
 
 # shellcheck disable=SC2086
-${buildtools_path}/${BUILDKITE_COMMAND}
+export PATH=${buildtools_path}:${PATH}
